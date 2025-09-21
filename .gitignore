@@ -1,0 +1,23 @@
+# Terraform state files
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Terraform crash logs
+crash.log
+
+# Terraform directories
+.terraform/
+
+# OS / IDE files
+*.swp
+*.DS_Store
+.vscode/
+.idea/
+
+# Private keys (never push!)
+*.pem
+
+# Logs
+*.log
