@@ -178,6 +178,23 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_instance" "app" {
+  ami           = "ami-xxxxxxxx"
+  instance_type = "t2.micro"
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum install -y awscli
+
+              # Create shutdown script
+              echo '#!/bin/bash
+              aws s3 cp /var/log/messages s3://my-log-bucket/$(hostname)-shutdown.log' > /var/lib/cloud/scripts/per-instance/shutdown.sh
+
+              chmod +x /var/lib/cloud/scripts/per-instance/shutdown.sh
+              EOF
+}
+
+
+resource "aws_instance" "app" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t3.micro"
   key_name               = var.key_name
