@@ -14,3 +14,8 @@ variable "key_name" {
   description = "Existing EC2 key pair name (create in AWS Console if you don't have one)"
   type        = string
 }
+
+variable "bucket_name" {
+  description = "S3 bucket name for logs (must be unique globally)"
+  type        = string
+}
