@@ -104,6 +104,24 @@ resource "aws_s3_bucket_acl" "bucket_acl" {
   acl    = "private"
 }
 
+
+# S3 bucket for app logs
+resource "aws_s3_bucket" "app_logs" {
+  bucket = var.bucket_name   # bucket name should come from variable
+  force_destroy = true       # allows terraform to delete non-empty bucket (optional)
+}
+
+# Block all public access
+resource "aws_s3_bucket_public_access_block" "app_logs" {
+  bucket = aws_s3_bucket.app_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+
 # Lifecycle rule: delete logs after 7 days
 resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
   bucket = aws_s3_bucket.app_logs.id
