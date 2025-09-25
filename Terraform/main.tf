@@ -16,13 +16,25 @@ resource "aws_iam_role" "s3_readonly_role" {
   name = "S3ReadOnlyRole"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Principal = { Service = "ec2.amazonaws.com" },
-      Action   = "sts:AssumeRole"
-    }]
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      },
+      {
+        Effect = "Allow",
+        Principal = {
+          AWS = "arn:aws:iam::262164343831:user/tech_eazy"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
   })
 }
+
 
 resource "aws_iam_policy" "s3_readonly_policy" {
   name   = "S3ReadOnlyPolicy"
