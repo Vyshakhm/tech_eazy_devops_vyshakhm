@@ -106,15 +106,22 @@ resource "aws_s3_bucket_acl" "bucket_acl" {
 
 # Lifecycle rule: delete logs after 7 days
 resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
-  bucket = aws_s3_bucket.log_bucket.id
+  bucket = aws_s3_bucket.app_logs.id
+
   rule {
-    id     = "delete-old-logs"
+    id     = "expire-logs"
     status = "Enabled"
+
+    filter {
+      prefix = "app/logs/"   # only apply to logs in this folder
+    }
+
     expiration {
       days = 7
     }
   }
 }
+
 
 # 4. Security group for EC2
 resource "aws_security_group" "app_sg" {
