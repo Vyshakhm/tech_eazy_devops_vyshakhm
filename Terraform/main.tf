@@ -178,8 +178,12 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_instance" "app" {
-  ami           = "ami-xxxxxxxx"
-  instance_type = "t2.micro"
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.app_sg.id]
+
+  iam_instance_profile   = aws_iam_instance_profile.s3_write_instance_profile.name
 
   user_data = <<-EOF
               #!/bin/bash
@@ -191,18 +195,11 @@ resource "aws_instance" "app" {
 
               chmod +x /var/lib/cloud/scripts/per-instance/shutdown.sh
               EOF
+
+
+user_data = file("${path.module}/../Scripts/user_data.sh")
+
+tags = { Name = "app-with-s3-logs" } 
+
 }
 
-
-resource "aws_instance" "app" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t3.micro"
-  key_name               = var.key_name
-  vpc_security_group_ids = [aws_security_group.app_sg.id]
-
-  iam_instance_profile   = aws_iam_instance_profile.s3_write_instance_profile.name
-
-  user_data = file("${path.module}/../Scripts/user_data.sh")
-
-  tags = { Name = "app-with-s3-logs" }
-}
