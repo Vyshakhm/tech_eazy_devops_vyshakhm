@@ -51,9 +51,9 @@ TIMESTAMP=\$(date +%Y%m%d-%H%M%S)
 
 echo "[\$TIMESTAMP] Starting log upload"
 
-aws s3 cp \$LOG_DIR/cloud-init.log s3://\${bucket_name}/system-logs/\$${INSTANCE_ID}_cloud-init_\$TIMESTAMP.log
-aws s3 cp \$LOG_DIR/syslog s3://\${bucket_name}/system-logs/\$${INSTANCE_ID}_syslog_\$TIMESTAMP.log
-aws s3 cp \$LOG_DIR/app/app.log s3://\${bucket_name}/app/logs/\$${INSTANCE_ID}_app_\$TIMESTAMP.log
+aws s3 cp \$LOG_DIR/cloud-init.log s3://${bucket_name}/system-logs
+aws s3 cp \$LOG_DIR/syslog s3://${bucket_name}/system
+aws s3 cp \$LOG_DIR/app/app.log s3://${bucket_name}/app/logs/
 
 echo "[\$TIMESTAMP] Upload finished"
 EOF
