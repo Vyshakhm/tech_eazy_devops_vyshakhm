@@ -39,6 +39,10 @@ aws s3 cp /var/log/cloud-init.log s3://$BUCKET_NAME/system/cloud-init.log
 aws s3 cp /opt/app/target/*.log s3://$BUCKET_NAME/app/logs/ || true
 EOF
 
+
+
+
+
 chmod +x /opt/scripts/upload-logs.sh
 
 # Hook script at shutdown
