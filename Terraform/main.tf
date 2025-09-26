@@ -185,21 +185,10 @@ resource "aws_instance" "app" {
 
   iam_instance_profile   = aws_iam_instance_profile.s3_write_instance_profile.name
 
-  user_data = <<-EOF
-              #!/bin/bash
-              yum install -y awscli
 
-              # Create shutdown script
-              echo '#!/bin/bash
-              aws s3 cp /var/log/messages s3://my-log-bucket/$(hostname)-shutdown.log' > /var/lib/cloud/scripts/per-instance/shutdown.sh
+  user_data = file("${path.module}/../Scripts/user_data.sh")
 
-              chmod +x /var/lib/cloud/scripts/per-instance/shutdown.sh
-              EOF
-
-
-user_data = file("${path.module}/../Scripts/user_data.sh")
-
-tags = { Name = "app-with-s3-logs" } 
+  tags = { Name = "app-with-s3-logs" } 
 
 }
 
