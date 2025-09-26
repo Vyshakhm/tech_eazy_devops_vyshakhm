@@ -30,7 +30,10 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/java -jar /opt/app/app.jar --server.port=80 > /var/log/app/app.log 2>&1
+
+ExecStart=/usr/bin/java -jar /opt/app/app.jar --server.port=80
+StandardOutput=file:/var/log/app/app.log
+StandardError=inherit
 Restart=on-failure
 User=root
 
