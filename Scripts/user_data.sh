@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
+# Install dependencies
 apt-get update -y
-apt-get install -y openjdk-21-jdk maven awscli git
+apt-get install -y awscli openjdk-21-jdk maven git
 
 # Setup app
 mkdir -p /opt/app
@@ -11,6 +12,12 @@ git clone https://github.com/Trainings-TechEazy/test-repo-for-devops.git src || 
 cd src
 mvn clean package -DskipTests
 cp target/*.jar /opt/app/app.jar
+
+# Setup App log
+mkdir -p /var/log/app
+nohup java -jar /opt/app/app.jar > /var/log/app/app.log 2>&1 &
+
+chmod +r /opt/app/target/techeazy-devops-0.0.1-SNAPSHOT.jar
 
 # Systemd service for app
 cat >/etc/systemd/system/parcel-app.service <<SERVICE
@@ -31,25 +38,31 @@ systemctl enable parcel-app
 systemctl start parcel-app
 
 
-# ---------- Upload logs on shutdown ----------
-# Create shutdown log upload script
-cat << 'EOF' > /usr/local/bin/upload-logs.sh
+# Create log upload script
+cat <<EOF > /usr/local/bin/upload-logs.sh
 #!/bin/bash
-BUCKET_NAME="${bucket_name}"          # Terraform replaces this
-INSTANCE_ID=$$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-TIMESTAMP=$$(date +%Y%m%d-%H%M%S)
+set -x
+exec >> /var/log/upload-logs-debug.log 2>&1
+LOG_DIR="/var/log"
+BUCKET_NAME="${bucket_name}"
 
-echo "[$$TIMESTAMP] Uploading logs to $$BUCKET_NAME" >> /var/log/upload-logs-debug.log
+INSTANCE_ID=\$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+TIMESTAMP=\$(date +%Y%m%d-%H%M%S)
 
-aws s3 cp /var/log/cloud-init.log s3://$$BUCKET_NAME/system-logs/$$INSTANCE_ID_cloud-init_$$TIMESTAMP.log >> /var/log/upload-logs-debug.log 2>&1
-aws s3 cp /var/log/syslog s3://$$BUCKET_NAME/system-logs/$$INSTANCE_ID_syslog_$$TIMESTAMP.log >> /var/log/upload-logs-debug.log 2>&1
-aws s3 cp /var/log/app/app.log s3://$$BUCKET_NAME/app/logs/$$INSTANCE_ID_app_$$TIMESTAMP.log >> /var/log/upload-logs-debug.log 2>&1
+echo "[\$TIMESTAMP] Starting log upload"
+
+aws s3 cp \$LOG_DIR/cloud-init.log s3://\${bucket_name}/system-logs/\$${INSTANCE_ID}_cloud-init_\$TIMESTAMP.log
+aws s3 cp \$LOG_DIR/syslog s3://\${bucket_name}/system-logs/\$${INSTANCE_ID}_syslog_\$TIMESTAMP.log
+aws s3 cp \$LOG_DIR/app/app.log s3://\${bucket_name}/app/logs/\$${INSTANCE_ID}_app_\$TIMESTAMP.log
+
+echo "[\$TIMESTAMP] Upload finished"
 EOF
 
 chmod +x /usr/local/bin/upload-logs.sh
 
-# Register systemd shutdown service
-cat << EOF > /etc/systemd/system/upload-logs.service
+
+# Create systemd service for shutdown log upload
+cat <<EOF > /etc/systemd/system/upload-logs.service
 [Unit]
 Description=Upload logs to S3 on shutdown
 DefaultDependencies=no
@@ -64,4 +77,5 @@ RemainAfterExit=true
 WantedBy=halt.target reboot.target shutdown.target
 EOF
 
+systemctl daemon-reload
 systemctl enable upload-logs.service
