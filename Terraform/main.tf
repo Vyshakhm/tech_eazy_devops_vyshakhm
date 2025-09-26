@@ -67,14 +67,18 @@ resource "aws_iam_role" "s3_write_role" {
 }
 
 resource "aws_iam_policy" "s3_write_policy" {
-  name   = "S3WritePolicy"
-  policy = jsonencode({
-    Version = "2012-10-17",
+  name        = "S3WritePolicy"
+  description = "Policy to allow EC2 to write logs to S3"
+  policy      = jsonencode({
+    Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow",
-        Action   = ["s3:CreateBucket", "s3:PutObject"],
-        Resource = "*"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:ListBucket"]
+        Resource = [
+          "arn:aws:s3:::${var.bucket_name}",
+          "arn:aws:s3:::${var.bucket_name}/*"
+        ]
       }
     ]
   })
@@ -188,7 +192,7 @@ resource "aws_instance" "app" {
 
   user_data = file("${path.module}/../Scripts/user_data.sh")
 
-  tags = { Name = "app-with-s3-logs" } 
+  tags = { Name = "app-with-s3-logs" }
 
 }
 
