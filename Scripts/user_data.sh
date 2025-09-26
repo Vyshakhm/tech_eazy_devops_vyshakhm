@@ -30,31 +30,35 @@ SERVICE
 systemctl enable parcel-app
 systemctl start parcel-app
 
-# Shutdown script to upload logs
-mkdir -p /opt/scripts
-cat >/opt/scripts/upload-logs.sh <<'EOF'
+
+# ---------- Upload logs on shutdown ----------
+# Create shutdown log upload script
+cat << 'EOF' > /usr/local/bin/upload-logs.sh
 #!/bin/bash
-BUCKET_NAME="${BUCKET_NAME}"
-aws s3 cp /var/log/cloud-init.log s3://$BUCKET_NAME/system/cloud-init.log
-aws s3 cp /opt/app/target/*.log s3://$BUCKET_NAME/app/logs/ || true
+BUCKET_NAME="${bucket_name}"          # Terraform replaces this
+INSTANCE_ID=$$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+TIMESTAMP=$$(date +%Y%m%d-%H%M%S)
+
+echo "[$$TIMESTAMP] Uploading logs to $$BUCKET_NAME" >> /var/log/upload-logs-debug.log
+
+aws s3 cp /var/log/cloud-init.log s3://$$BUCKET_NAME/system-logs/$$INSTANCE_ID_cloud-init_$$TIMESTAMP.log >> /var/log/upload-logs-debug.log 2>&1
+aws s3 cp /var/log/syslog s3://$$BUCKET_NAME/system-logs/$$INSTANCE_ID_syslog_$$TIMESTAMP.log >> /var/log/upload-logs-debug.log 2>&1
+aws s3 cp /var/log/app/app.log s3://$$BUCKET_NAME/app/logs/$$INSTANCE_ID_app_$$TIMESTAMP.log >> /var/log/upload-logs-debug.log 2>&1
 EOF
 
+chmod +x /usr/local/bin/upload-logs.sh
 
-
-
-
-chmod +x /opt/scripts/upload-logs.sh
-
-# Hook script at shutdown
-cat >/etc/systemd/system/upload-logs.service <<EOF
+# Register systemd shutdown service
+cat << EOF > /etc/systemd/system/upload-logs.service
 [Unit]
-Description=Upload Logs to S3 on Shutdown
+Description=Upload logs to S3 on shutdown
 DefaultDependencies=no
 Before=shutdown.target reboot.target halt.target
 
 [Service]
 Type=oneshot
-ExecStart=/opt/scripts/upload-logs.sh
+ExecStart=/usr/local/bin/upload-logs.sh
+RemainAfterExit=true
 
 [Install]
 WantedBy=halt.target reboot.target shutdown.target

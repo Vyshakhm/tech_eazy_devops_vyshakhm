@@ -43,7 +43,10 @@ resource "aws_iam_policy" "s3_readonly_policy" {
     Statement = [{
       Effect   = "Allow",
       Action   = ["s3:ListBucket", "s3:GetObject"],
-      Resource = "*"
+      Resource = [
+        "arn:aws:s3:::${var.bucket_name}",
+        "arn:aws:s3:::${var.bucket_name}/*"
+]
     }]
   })
 }
@@ -74,7 +77,7 @@ resource "aws_iam_policy" "s3_write_policy" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["s3:PutObject", "s3:ListBucket"]
+        Action = ["s3:CreateBucket", "s3:PutObject", "s3:ListBucket"]
         Resource = [
           "arn:aws:s3:::${var.bucket_name}",
           "arn:aws:s3:::${var.bucket_name}/*"
@@ -181,18 +184,22 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+
 resource "aws_instance" "app" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t3.micro"
-  key_name               = var.key_name
+  ami           = data.aws_ami.ubuntu.id 
+  instance_type = "t2.micro"
+  key_name      = var.key_name
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-  iam_instance_profile   = aws_iam_instance_profile.s3_write_instance_profile.name
+  iam_instance_profile = aws_iam_instance_profile.s3_write_instance_profile.name
 
+  user_data = templatefile("${path.module}/../Scripts/user_data.sh", {
+    bucket_name = var.bucket_name
+  })
 
-  user_data = file("${path.module}/../Scripts/user_data.sh")
-
-  tags = { Name = "app-with-s3-logs" }
-
+  tags = {
+    Name = "app-instance"
+  }
 }
+
 
